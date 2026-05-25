@@ -38,36 +38,81 @@ final class MLXLLMService: LLMService, ObservableObject {
 
     private var container: ModelContainer?
 
+    // MARK: Cache Check
+
+    /// 모델이 로컬에 이미 다운로드돼 있는지 확인.
+    /// Documents/huggingface/models/{id}/ 에 .safetensors 파일이 하나라도 있으면 캐시됨.
+    var isModelCached: Bool {
+        let dir = VLMRegistry.qwen3VL4BInstruct4Bit.modelDirectory()
+        let fm = FileManager.default
+        guard fm.fileExists(atPath: dir.path) else { return false }
+        let contents = (try? fm.contentsOfDirectory(atPath: dir.path)) ?? []
+        return contents.contains { $0.hasSuffix(".safetensors") }
+    }
+
     // MARK: Load
 
-    /// Download + compile the model. Safe to call multiple times.
-    func loadIfNeeded() async {
+    /// 캐시가 있으면 바로 로드 (다운로드 없음), 없으면 다운로드 후 로드.
+    /// 앱 시작 시 자동 호출.
+    func loadIfNeeded() {
         guard case .notLoaded = modelState else { return }
-        await load()
+        Task { await load() }
+    }
+
+    func resetToNotLoaded() {
+        container = nil
+        modelState = .notLoaded
     }
 
     func load() async {
-        let startTime = Date()
-        modelState = .downloading(.init(fraction: 0, filesDone: 0, filesTotal: 0, startedAt: startTime))
+        // 이미 로딩 중이거나 준비된 경우 스킵
+        switch modelState {
+        case .downloading, .loading, .ready: return
+        default: break
+        }
+        guard container == nil else { return }
+
+        let cached = isModelCached
+
+        if cached {
+            // 이미 다운로드된 경우: 다운로드 UI 없이 바로 로딩
+            modelState = .loading
+        } else {
+            // 최초 다운로드
+            let startTime = Date()
+            modelState = .downloading(.init(fraction: 0, filesDone: 0, filesTotal: 0, startedAt: startTime))
+
+            do {
+                container = try await VLMModelFactory.shared.loadContainer(
+                    configuration: VLMRegistry.qwen3VL4BInstruct4Bit
+                ) { [weak self] progress in
+                    let fraction   = max(0, min(1, progress.fractionCompleted))
+                    let filesDone  = Int(progress.completedUnitCount)
+                    let filesTotal = Int(progress.totalUnitCount)
+                    Task { @MainActor [weak self] in
+                        self?.modelState = .downloading(.init(
+                            fraction: fraction,
+                            filesDone: filesDone,
+                            filesTotal: filesTotal,
+                            startedAt: startTime
+                        ))
+                    }
+                }
+                modelState = .loading
+                try? await Task.sleep(nanoseconds: 200_000_000)
+                modelState = .ready
+                return
+            } catch {
+                modelState = .error(error.localizedDescription)
+                return
+            }
+        }
+
+        // 캐시에서 로드 (네트워크 없음, 수 초 소요)
         do {
             container = try await VLMModelFactory.shared.loadContainer(
                 configuration: VLMRegistry.qwen3VL4BInstruct4Bit
-            ) { [weak self] progress in
-                let fraction   = max(0, min(1, progress.fractionCompleted))
-                let filesDone  = Int(progress.completedUnitCount)
-                let filesTotal = Int(progress.totalUnitCount)
-                Task { @MainActor [weak self] in
-                    self?.modelState = .downloading(.init(
-                        fraction: fraction,
-                        filesDone: filesDone,
-                        filesTotal: filesTotal,
-                        startedAt: startTime
-                    ))
-                }
-            }
-            modelState = .loading
-            // Brief pause so UI shows "로딩 중" before ready
-            try? await Task.sleep(nanoseconds: 300_000_000)
+            )
             modelState = .ready
         } catch {
             modelState = .error(error.localizedDescription)

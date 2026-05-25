@@ -30,13 +30,15 @@ final class AIChatViewModel: ObservableObject {
                 self.modelState = state
             }
         }
+        // 앱 시작 시 캐시가 있으면 자동 로드 (다운로드 없음, 수 초만 소요)
+        mlxService.loadIfNeeded()
     }
 
     // MARK: - Model Loading
 
-    /// Kick off model download + compilation.
+    /// 사용자가 "모델 로드" 버튼을 누를 때 (최초 다운로드 시에만 사용).
     func loadModel() {
-        Task { await mlxService.load() }
+        mlxService.loadIfNeeded()
     }
 
     var modelIsReady: Bool {

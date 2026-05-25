@@ -29,6 +29,9 @@
 		1A1000400000000000000002 /* OverlayGeometryMapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1000300000000000000002 /* OverlayGeometryMapperTests.swift */; };
 		1A1000400000000000000003 /* TranslationCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1000300000000000000003 /* TranslationCacheTests.swift */; };
 		1A1000400000000000000004 /* StableDetectionBufferTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1000300000000000000004 /* StableDetectionBufferTests.swift */; };
+		1A2000030000000000000001 /* MLXVLM in Frameworks */ = {isa = PBXBuildFile; productRef = 1A2000020000000000000001 /* MLXVLM */; };
+		1A2000030000000000000002 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = 1A2000020000000000000002 /* MLXLMCommon */; };
+		1A2000040000000000000002 /* MarkdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2000040000000000000001 /* MarkdownView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -60,6 +63,7 @@
 		1A1000100000000000000010 /* LLMService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMService.swift; sourceTree = "<group>"; };
 		1A1000100000000000000011 /* AIChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIChatViewModel.swift; sourceTree = "<group>"; };
 		1A1000100000000000000012 /* AIChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIChatView.swift; sourceTree = "<group>"; };
+		1A2000040000000000000001 /* MarkdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownView.swift; sourceTree = "<group>"; };
 		1A1000300000000000000001 /* TextLanguageFilterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextLanguageFilterTests.swift; sourceTree = "<group>"; };
 		1A1000300000000000000002 /* OverlayGeometryMapperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayGeometryMapperTests.swift; sourceTree = "<group>"; };
 		1A1000300000000000000003 /* TranslationCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationCacheTests.swift; sourceTree = "<group>"; };
@@ -73,6 +77,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1A2000030000000000000001 /* MLXVLM in Frameworks */,
+				1A2000030000000000000002 /* MLXLMCommon in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -184,6 +190,7 @@
 				1A100010000000000000000D /* SimulatorSampleSceneView.swift */,
 				1A100010000000000000000E /* HomeView.swift */,
 				1A1000100000000000000012 /* AIChatView.swift */,
+				1A2000040000000000000001 /* MarkdownView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -204,6 +211,10 @@
 			dependencies = (
 			);
 			name = RussianHelper;
+			packageProductDependencies = (
+				1A2000020000000000000001 /* MLXVLM */,
+				1A2000020000000000000002 /* MLXLMCommon */,
+			);
 			productName = RussianHelper;
 			productReference = 1A1000600000000000000001 /* RussianHelper.app */;
 			productType = "com.apple.product-type.application";
@@ -254,6 +265,9 @@
 			);
 			mainGroup = 1A1000800000000000000001;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				1A2000010000000000000001 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1A1000800000000000000002 /* Products */;
 			projectDirPath = "";
@@ -305,6 +319,7 @@
 				1A1000200000000000000010 /* LLMService.swift in Sources */,
 				1A1000200000000000000011 /* AIChatViewModel.swift in Sources */,
 				1A1000200000000000000012 /* AIChatView.swift in Sources */,
+				1A2000040000000000000002 /* MarkdownView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -582,6 +597,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		1A2000010000000000000001 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ml-explore/mlx-swift-lm";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = "2.0.0";
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1A2000020000000000000001 /* MLXVLM */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1A2000010000000000000001 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
+			productName = MLXVLM;
+		};
+		1A2000020000000000000002 /* MLXLMCommon */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1A2000010000000000000001 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
+			productName = MLXLMCommon;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 1A1000010000000000000001 /* Project object */;
 }

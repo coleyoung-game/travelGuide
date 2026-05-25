@@ -58,6 +58,27 @@ struct AIChatView: View {
         }
     }
 
+    @ViewBuilder
+    private var modelBadgeIcon: some View {
+        switch vm.modelState {
+        case .notLoaded:
+            Image(systemName: "icloud.and.arrow.down")
+                .font(.caption)
+        case .downloading, .loading:
+            ProgressView()
+                .scaleEffect(0.6)
+                .tint(C.dim)
+        case .ready:
+            Image(systemName: "checkmark.circle.fill")
+                .font(.caption)
+                .foregroundStyle(.green.opacity(0.8))
+        case .error:
+            Image(systemName: "exclamationmark.circle")
+                .font(.caption)
+                .foregroundStyle(.orange)
+        }
+    }
+
     private func closeSidebar() {
         withAnimation(.spring(response: 0.27, dampingFraction: 0.88)) {
             showSidebar = false
@@ -78,6 +99,7 @@ struct AIChatView: View {
 
             VStack(spacing: 0) {
                 topBar
+                modelStatusBanner
 
                 if vm.currentSession == nil {
                     welcomeView
@@ -88,6 +110,97 @@ struct AIChatView: View {
 
             inputBar
         }
+    }
+
+    // MARK: - Model Status Banner
+
+    @ViewBuilder
+    private var modelStatusBanner: some View {
+        switch vm.modelState {
+        case .notLoaded:
+            modelLoadPrompt
+
+        case .downloading(let progress):
+            modelProgressBar(label: "모델 다운로드 중…", progress: progress)
+
+        case .loading:
+            modelProgressBar(label: "모델 준비 중…", progress: 1.0)
+
+        case .error(let msg):
+            HStack(spacing: 10) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+                Text(msg)
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.8))
+                    .lineLimit(2)
+                Spacer()
+                Button("재시도") { vm.loadModel() }
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(C.accent)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color.orange.opacity(0.15))
+
+        case .ready:
+            EmptyView()
+        }
+    }
+
+    private var modelLoadPrompt: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "cpu")
+                .font(.subheadline)
+                .foregroundStyle(C.accent)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Qwen3-VL 4B · 온디바이스 AI")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.9))
+                Text("약 2.5 GB 다운로드 필요 (Wi-Fi 권장)")
+                    .font(.caption2)
+                    .foregroundStyle(C.dim)
+            }
+            Spacer()
+            Button("모델 로드") { vm.loadModel() }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(C.bg)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
+                .background(C.accent, in: Capsule())
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(C.accent.opacity(0.12))
+    }
+
+    private func modelProgressBar(label: String, progress: Double) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(label)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.white.opacity(0.8))
+                Spacer()
+                Text("\(Int(progress * 100))%")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(C.accent)
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(C.input)
+                        .frame(height: 6)
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(C.accent)
+                        .frame(width: geo.size.width * progress, height: 6)
+                        .animation(.easeInOut(duration: 0.3), value: progress)
+                }
+            }
+            .frame(height: 6)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(C.sidebar)
     }
 
     // MARK: - Top Bar
@@ -314,10 +427,9 @@ struct AIChatView: View {
 
                         // Model badge
                         HStack(spacing: 4) {
+                            modelBadgeIcon
                             Text("Qwen3-VL")
                                 .font(.caption.weight(.medium))
-                            Image(systemName: "chevron.down")
-                                .font(.caption2)
                         }
                         .foregroundStyle(C.dim)
                         .padding(.trailing, 10)
@@ -545,12 +657,8 @@ private struct ChatMessageRow: View {
                 StreamingDotsView()
                     .padding(.leading, 2)
             } else {
-                Text(message.content)
-                    .font(.body)
-                    .foregroundStyle(.white.opacity(0.92))
+                MarkdownView(text: message.content)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .lineSpacing(3)
-                    .textSelection(.enabled)
             }
         }
     }

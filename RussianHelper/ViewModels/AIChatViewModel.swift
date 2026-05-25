@@ -11,10 +11,38 @@ final class AIChatViewModel: ObservableObject {
     @Published var attachedImage: UIImage? = nil
     @Published var isGenerating: Bool = false
 
-    // MARK: - Private
+    /// Forwarded from MLXLLMService so views can observe model load progress.
+    @Published var modelState: MLXLLMService.ModelState = .notLoaded
 
-    private let llm: LLMService = MockLLMService()
+    // MARK: - Services
+
+    let mlxService = MLXLLMService()
+    private var llm: LLMService { mlxService }
     private var generationTask: Task<Void, Never>?
+
+    // MARK: - Init
+
+    init() {
+        // Mirror mlxService.modelState into our own published var
+        Task { [weak self] in
+            guard let self else { return }
+            for await state in self.mlxService.$modelState.values {
+                self.modelState = state
+            }
+        }
+    }
+
+    // MARK: - Model Loading
+
+    /// Kick off model download + compilation.
+    func loadModel() {
+        Task { await mlxService.load() }
+    }
+
+    var modelIsReady: Bool {
+        if case .ready = modelState { return true }
+        return false
+    }
 
     // MARK: - Computed
 
@@ -27,7 +55,8 @@ final class AIChatViewModel: ObservableObject {
     }
 
     var canSend: Bool {
-        !inputText.trimmingCharacters(in: .whitespaces).isEmpty || attachedImage != nil
+        guard modelIsReady else { return false }
+        return !inputText.trimmingCharacters(in: .whitespaces).isEmpty || attachedImage != nil
     }
 
     // MARK: - Session Management

@@ -21,6 +21,10 @@
 		1A100020000000000000000C /* TranslatedTextOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A100010000000000000000C /* TranslatedTextOverlayView.swift */; };
 		1A100020000000000000000D /* SimulatorSampleSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A100010000000000000000D /* SimulatorSampleSceneView.swift */; };
 		1A100020000000000000000E /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A100010000000000000000E /* HomeView.swift */; };
+		1A100020000000000000000F /* ChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A100010000000000000000F /* ChatMessage.swift */; };
+		1A1000200000000000000010 /* LLMService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1000100000000000000010 /* LLMService.swift */; };
+		1A1000200000000000000011 /* AIChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1000100000000000000011 /* AIChatViewModel.swift */; };
+		1A1000200000000000000012 /* AIChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1000100000000000000012 /* AIChatView.swift */; };
 		1A1000400000000000000001 /* TextLanguageFilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1000300000000000000001 /* TextLanguageFilterTests.swift */; };
 		1A1000400000000000000002 /* OverlayGeometryMapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1000300000000000000002 /* OverlayGeometryMapperTests.swift */; };
 		1A1000400000000000000003 /* TranslationCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1000300000000000000003 /* TranslationCacheTests.swift */; };
@@ -52,6 +56,10 @@
 		1A100010000000000000000C /* TranslatedTextOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslatedTextOverlayView.swift; sourceTree = "<group>"; };
 		1A100010000000000000000D /* SimulatorSampleSceneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulatorSampleSceneView.swift; sourceTree = "<group>"; };
 		1A100010000000000000000E /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		1A100010000000000000000F /* ChatMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessage.swift; sourceTree = "<group>"; };
+		1A1000100000000000000010 /* LLMService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMService.swift; sourceTree = "<group>"; };
+		1A1000100000000000000011 /* AIChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIChatViewModel.swift; sourceTree = "<group>"; };
+		1A1000100000000000000012 /* AIChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIChatView.swift; sourceTree = "<group>"; };
 		1A1000300000000000000001 /* TextLanguageFilterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextLanguageFilterTests.swift; sourceTree = "<group>"; };
 		1A1000300000000000000002 /* OverlayGeometryMapperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayGeometryMapperTests.swift; sourceTree = "<group>"; };
 		1A1000300000000000000003 /* TranslationCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationCacheTests.swift; sourceTree = "<group>"; };
@@ -115,6 +123,7 @@
 			isa = PBXGroup;
 			children = (
 				1A1000100000000000000003 /* DetectedTextRegion.swift */,
+				1A100010000000000000000F /* ChatMessage.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -141,6 +150,8 @@
 			isa = PBXGroup;
 			children = (
 				1A1000100000000000000008 /* CameraTranslationViewModel.swift */,
+				1A1000100000000000000010 /* LLMService.swift */,
+				1A1000100000000000000011 /* AIChatViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -172,6 +183,7 @@
 				1A100010000000000000000C /* TranslatedTextOverlayView.swift */,
 				1A100010000000000000000D /* SimulatorSampleSceneView.swift */,
 				1A100010000000000000000E /* HomeView.swift */,
+				1A1000100000000000000012 /* AIChatView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -289,6 +301,10 @@
 				1A100020000000000000000C /* TranslatedTextOverlayView.swift in Sources */,
 				1A100020000000000000000D /* SimulatorSampleSceneView.swift in Sources */,
 				1A100020000000000000000E /* HomeView.swift in Sources */,
+				1A100020000000000000000F /* ChatMessage.swift in Sources */,
+				1A1000200000000000000010 /* LLMService.swift in Sources */,
+				1A1000200000000000000011 /* AIChatViewModel.swift in Sources */,
+				1A1000200000000000000012 /* AIChatView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HomeView: View {
     @State private var showCameraTranslation = false
+    @State private var showAIChat = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -57,6 +58,9 @@ struct HomeView: View {
         }
         .fullScreenCover(isPresented: $showCameraTranslation) {
             ContentView()
+        }
+        .fullScreenCover(isPresented: $showAIChat) {
+            AIChatView()
         }
     }
 
@@ -280,7 +284,7 @@ struct HomeView: View {
             .overlay {
                 HStack(spacing: 20) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("준비 중")
+                        Text("Qwen3-VL · Local LLM")
                             .font(.caption.weight(.medium))
                             .foregroundStyle(.secondary)
 
@@ -288,22 +292,23 @@ struct HomeView: View {
                             .font(.title3.weight(.bold))
                             .foregroundStyle(Color(UIColor.label))
 
-                        Text("Local LLM과 대화하며\n러시아어를 학습하세요")
+                        Text("이미지 첨부 후 연속 질문,\n러시아어 · 카자흐어 지원")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
 
                         Spacer()
 
-                        Text("곧 출시 예정")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(Color(UIColor.systemBackground))
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(
-                                Color(UIColor.label).opacity(0.35),
-                                in: Capsule()
-                            )
+                        Button {
+                            showAIChat = true
+                        } label: {
+                            Text("대화 시작")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(Color(UIColor.systemBackground))
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(Color(UIColor.label), in: Capsule())
+                        }
                     }
 
                     Spacer()

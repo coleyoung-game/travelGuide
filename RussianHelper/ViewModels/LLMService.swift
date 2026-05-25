@@ -17,10 +17,17 @@ final class MLXLLMService: LLMService, ObservableObject {
 
     // MARK: Model State
 
+    struct DownloadProgress: Equatable {
+        var fraction: Double      // 0.0 – 1.0
+        var filesDone: Int        // 완료된 파일 수
+        var filesTotal: Int       // 전체 파일 수
+        var startedAt: Date       // 다운로드 시작 시각
+    }
+
     enum ModelState: Equatable {
         case notLoaded
-        case downloading(Double)   // 0.0 – 1.0
-        case loading               // compiling/preparing
+        case downloading(DownloadProgress)
+        case loading               // weights 로딩/컴파일
         case ready
         case error(String)
     }
@@ -40,15 +47,27 @@ final class MLXLLMService: LLMService, ObservableObject {
     }
 
     func load() async {
-        modelState = .downloading(0)
+        let startTime = Date()
+        modelState = .downloading(.init(fraction: 0, filesDone: 0, filesTotal: 0, startedAt: startTime))
         do {
             container = try await VLMModelFactory.shared.loadContainer(
                 configuration: VLMRegistry.qwen3VL4BInstruct4Bit
             ) { [weak self] progress in
+                let fraction   = max(0, min(1, progress.fractionCompleted))
+                let filesDone  = Int(progress.completedUnitCount)
+                let filesTotal = Int(progress.totalUnitCount)
                 Task { @MainActor [weak self] in
-                    self?.modelState = .downloading(progress.fractionCompleted)
+                    self?.modelState = .downloading(.init(
+                        fraction: fraction,
+                        filesDone: filesDone,
+                        filesTotal: filesTotal,
+                        startedAt: startTime
+                    ))
                 }
             }
+            modelState = .loading
+            // Brief pause so UI shows "로딩 중" before ready
+            try? await Task.sleep(nanoseconds: 300_000_000)
             modelState = .ready
         } catch {
             modelState = .error(error.localizedDescription)

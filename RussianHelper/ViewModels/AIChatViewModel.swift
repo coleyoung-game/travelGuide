@@ -44,6 +44,11 @@ final class AIChatViewModel: ObservableObject {
         return false
     }
 
+    var isDownloading: Bool {
+        if case .downloading = modelState { return true }
+        return false
+    }
+
     // MARK: - Computed
 
     var currentSession: ChatSession? {

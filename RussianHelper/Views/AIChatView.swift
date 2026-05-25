@@ -64,10 +64,22 @@ struct AIChatView: View {
         case .notLoaded:
             Image(systemName: "icloud.and.arrow.down")
                 .font(.caption)
-        case .downloading, .loading:
+                .foregroundStyle(C.dim)
+        case .downloading(let dp):
+            ZStack {
+                Circle()
+                    .stroke(C.dim.opacity(0.3), lineWidth: 1.5)
+                    .frame(width: 14, height: 14)
+                Circle()
+                    .trim(from: 0, to: dp.fraction)
+                    .stroke(C.accent, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+                    .frame(width: 14, height: 14)
+                    .rotationEffect(.degrees(-90))
+            }
+        case .loading:
             ProgressView()
-                .scaleEffect(0.6)
-                .tint(C.dim)
+                .scaleEffect(0.55)
+                .tint(C.accent)
         case .ready:
             Image(systemName: "checkmark.circle.fill")
                 .font(.caption)
@@ -120,27 +132,32 @@ struct AIChatView: View {
         case .notLoaded:
             modelLoadPrompt
 
-        case .downloading(let progress):
-            modelProgressBar(label: "모델 다운로드 중…", progress: progress)
+        case .downloading(let dp):
+            ModelDownloadBanner(dp: dp)
 
         case .loading:
-            modelProgressBar(label: "모델 준비 중…", progress: 1.0)
+            ModelLoadingBanner()
 
         case .error(let msg):
             HStack(spacing: 10) {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
-                Text(msg)
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.8))
-                    .lineLimit(2)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("다운로드 실패")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white)
+                    Text(msg)
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.7))
+                        .lineLimit(2)
+                }
                 Spacer()
                 Button("재시도") { vm.loadModel() }
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(C.accent)
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.vertical, 12)
             .background(Color.orange.opacity(0.15))
 
         case .ready:
@@ -157,7 +174,7 @@ struct AIChatView: View {
                 Text("Qwen3-VL 4B · 온디바이스 AI")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.white.opacity(0.9))
-                Text("약 2.5 GB 다운로드 필요 (Wi-Fi 권장)")
+                Text("약 2.5 GB · Wi-Fi 연결 권장")
                     .font(.caption2)
                     .foregroundStyle(C.dim)
             }
@@ -172,35 +189,6 @@ struct AIChatView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(C.accent.opacity(0.12))
-    }
-
-    private func modelProgressBar(label: String, progress: Double) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(label)
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.white.opacity(0.8))
-                Spacer()
-                Text("\(Int(progress * 100))%")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(C.accent)
-            }
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(C.input)
-                        .frame(height: 6)
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(C.accent)
-                        .frame(width: geo.size.width * progress, height: 6)
-                        .animation(.easeInOut(duration: 0.3), value: progress)
-                }
-            }
-            .frame(height: 6)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(C.sidebar)
     }
 
     // MARK: - Top Bar
@@ -725,6 +713,143 @@ private struct InputToolbarButton: View {
             .foregroundStyle(C.dim)
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
+    }
+}
+
+// MARK: - Model Download Banner
+
+private struct ModelDownloadBanner: View {
+    let dp: MLXLLMService.DownloadProgress
+
+    @State private var shimmerOffset: CGFloat = -1.0
+    @State private var elapsed: String = "0초"
+
+    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Top row
+            HStack(spacing: 8) {
+                // Spinning activity indicator
+                ProgressView()
+                    .scaleEffect(0.75)
+                    .tint(C.accent)
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("모델 다운로드 중")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.9))
+                    Text(subtitleText)
+                        .font(.caption2)
+                        .foregroundStyle(C.dim)
+                }
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 1) {
+                    Text("\(Int(dp.fraction * 100))%")
+                        .font(.caption.monospacedDigit().weight(.semibold))
+                        .foregroundStyle(C.accent)
+                    Text(elapsed)
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(C.dim)
+                }
+            }
+
+            // Shimmer progress bar
+            GeometryReader { geo in
+                let filled = max(4, geo.size.width * dp.fraction)
+                ZStack(alignment: .leading) {
+                    // Track
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(C.input)
+                        .frame(height: 6)
+
+                    // Filled
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(C.accent.opacity(0.85))
+                        .frame(width: filled, height: 6)
+                        .animation(.easeInOut(duration: 0.4), value: dp.fraction)
+
+                    // Shimmer sweep
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(
+                            LinearGradient(
+                                colors: [.clear, .white.opacity(0.5), .clear],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: filled * 0.4, height: 6)
+                        .offset(x: shimmerOffset * filled)
+                        .clipShape(RoundedRectangle(cornerRadius: 3))
+                        .frame(width: filled, alignment: .leading)
+                        .clipped()
+                }
+            }
+            .frame(height: 6)
+
+            // Note about large files
+            if dp.fraction > 0 && dp.fraction < 0.99 {
+                Text("대용량 파일 다운로드 중 — 진행률이 잠시 멈춰 보일 수 있습니다")
+                    .font(.caption2)
+                    .foregroundStyle(C.dim.opacity(0.7))
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(C.sidebar)
+        .onAppear { startShimmer() }
+        .onReceive(timer) { _ in updateElapsed() }
+    }
+
+    private var subtitleText: String {
+        if dp.filesTotal > 0 {
+            return "파일 \(dp.filesDone) / \(dp.filesTotal) · Qwen3-VL 4B"
+        }
+        return "HuggingFace에서 다운로드 중"
+    }
+
+    private func startShimmer() {
+        shimmerOffset = -0.4
+        withAnimation(.linear(duration: 1.4).repeatForever(autoreverses: false)) {
+            shimmerOffset = 1.0
+        }
+    }
+
+    private func updateElapsed() {
+        let secs = Int(-dp.startedAt.timeIntervalSinceNow)
+        if secs < 60 {
+            elapsed = "\(secs)초"
+        } else {
+            elapsed = "\(secs / 60)분 \(secs % 60)초"
+        }
+    }
+}
+
+// MARK: - Model Loading Banner (after download, while compiling)
+
+private struct ModelLoadingBanner: View {
+    @State private var dots = 0
+    private let timer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
+
+    var body: some View {
+        HStack(spacing: 10) {
+            ProgressView()
+                .scaleEffect(0.75)
+                .tint(C.accent)
+            Text("모델 로딩 중\(String(repeating: ".", count: dots + 1))")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.white.opacity(0.8))
+            Spacer()
+            Text("거의 완료")
+                .font(.caption2)
+                .foregroundStyle(C.dim)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(C.sidebar)
+        .onReceive(timer) { _ in dots = (dots + 1) % 3 }
     }
 }
 

@@ -51,6 +51,11 @@ final class AIChatViewModel: ObservableObject {
         return false
     }
 
+    /// 백그라운드 로딩 중 (모델 .ready지만 container 아직 메모리 매핑 중)
+    var isBackgroundLoading: Bool {
+        modelState == .ready && !mlxService.containerReady
+    }
+
     // MARK: - Computed
 
     var currentSession: ChatSession? {
@@ -62,6 +67,7 @@ final class AIChatViewModel: ObservableObject {
     }
 
     var canSend: Bool {
+        // 다운로드/에러 상태에서는 불가. .ready (백그라운드 로딩 포함) 이면 가능
         guard modelIsReady else { return false }
         return !inputText.trimmingCharacters(in: .whitespaces).isEmpty || attachedImage != nil
     }

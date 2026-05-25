@@ -81,9 +81,15 @@ struct AIChatView: View {
                 .scaleEffect(0.55)
                 .tint(C.accent)
         case .ready:
-            Image(systemName: "checkmark.circle.fill")
-                .font(.caption)
-                .foregroundStyle(.green.opacity(0.8))
+            if vm.isBackgroundLoading {
+                ProgressView()
+                    .scaleEffect(0.55)
+                    .tint(C.accent)
+            } else {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.green.opacity(0.8))
+            }
         case .error:
             Image(systemName: "exclamationmark.circle")
                 .font(.caption)
@@ -161,7 +167,7 @@ struct AIChatView: View {
             .background(Color.orange.opacity(0.15))
 
         case .ready:
-            EmptyView()
+            EmptyView()   // 배너 완전히 숨김 — 대화 가능 상태
         }
     }
 
@@ -389,6 +395,13 @@ struct AIChatView: View {
                         }
                         .frame(width: 34, height: 34)
                         .animation(.spring(response: 0.22), value: vm.canSend)
+                        .overlay(alignment: .topTrailing) {
+                            // 백그라운드 로딩 중 표시 — 작은 펄싱 점
+                            if vm.isBackgroundLoading {
+                                BackgroundLoadingDot()
+                                    .offset(x: 2, y: -2)
+                            }
+                        }
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 14)
@@ -713,6 +726,22 @@ private struct InputToolbarButton: View {
             .foregroundStyle(C.dim)
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
+    }
+}
+
+// MARK: - Background Loading Dot (모델 백그라운드 로딩 중 표시)
+
+private struct BackgroundLoadingDot: View {
+    @State private var pulsing = false
+
+    var body: some View {
+        Circle()
+            .fill(C.accent)
+            .frame(width: 7, height: 7)
+            .scaleEffect(pulsing ? 1.0 : 0.5)
+            .opacity(pulsing ? 1.0 : 0.4)
+            .animation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true), value: pulsing)
+            .onAppear { pulsing = true }
     }
 }
 

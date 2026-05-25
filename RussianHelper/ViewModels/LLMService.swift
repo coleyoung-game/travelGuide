@@ -33,15 +33,19 @@ final class MLXLLMService: LLMService, ObservableObject {
     }
 
     @Published private(set) var modelState: ModelState = .notLoaded
+    /// 실제 ModelContainer가 준비됐는지 (메모리 로드 완료).
+    /// modelState == .ready 이지만 container == nil 이면 백그라운드 로딩 중.
+    @Published private(set) var containerReady: Bool = false
 
     // MARK: Private
 
     private var container: ModelContainer?
+    /// 백그라운드 로딩 중 대기 중인 메시지 생성 Task들
+    private var pendingContinuations: [CheckedContinuation<ModelContainer, Error>] = []
 
     // MARK: Cache Check
 
     /// 모델이 로컬에 이미 다운로드돼 있는지 확인.
-    /// Documents/huggingface/models/{id}/ 에 .safetensors 파일이 하나라도 있으면 캐시됨.
     var isModelCached: Bool {
         let dir = VLMRegistry.qwen3VL4BInstruct4Bit.modelDirectory()
         let fm = FileManager.default
@@ -52,8 +56,6 @@ final class MLXLLMService: LLMService, ObservableObject {
 
     // MARK: Load
 
-    /// 캐시가 있으면 바로 로드 (다운로드 없음), 없으면 다운로드 후 로드.
-    /// 앱 시작 시 자동 호출.
     func loadIfNeeded() {
         guard case .notLoaded = modelState else { return }
         Task { await load() }
@@ -61,29 +63,46 @@ final class MLXLLMService: LLMService, ObservableObject {
 
     func resetToNotLoaded() {
         container = nil
+        containerReady = false
         modelState = .notLoaded
+        // 대기 중인 continuation들 취소
+        let pending = pendingContinuations
+        pendingContinuations = []
+        for c in pending { c.resume(throwing: LLMError.modelNotLoaded) }
     }
 
     func load() async {
-        // 이미 로딩 중이거나 준비된 경우 스킵
         switch modelState {
-        case .downloading, .loading, .ready: return
+        case .downloading, .loading: return   // 이미 진행 중
+        case .ready: return                   // 이미 완료
         default: break
         }
-        guard container == nil else { return }
 
-        let cached = isModelCached
-
-        if cached {
-            // 이미 다운로드된 경우: 다운로드 UI 없이 바로 로딩
-            modelState = .loading
+        if isModelCached {
+            // 캐시 있음: UI는 즉시 .ready로, 백그라운드에서 메모리 로드
+            modelState = .ready
+            do {
+                let c = try await VLMModelFactory.shared.loadContainer(
+                    configuration: VLMRegistry.qwen3VL4BInstruct4Bit
+                )
+                container = c
+                containerReady = true
+                // 대기 중인 generate() 요청들 재개
+                let pending = pendingContinuations
+                pendingContinuations = []
+                for cont in pending { cont.resume(returning: c) }
+            } catch {
+                modelState = .error(error.localizedDescription)
+                let pending = pendingContinuations
+                pendingContinuations = []
+                for cont in pending { cont.resume(throwing: error) }
+            }
         } else {
             // 최초 다운로드
             let startTime = Date()
             modelState = .downloading(.init(fraction: 0, filesDone: 0, filesTotal: 0, startedAt: startTime))
-
             do {
-                container = try await VLMModelFactory.shared.loadContainer(
+                let c = try await VLMModelFactory.shared.loadContainer(
                     configuration: VLMRegistry.qwen3VL4BInstruct4Bit
                 ) { [weak self] progress in
                     let fraction   = max(0, min(1, progress.fractionCompleted))
@@ -98,24 +117,20 @@ final class MLXLLMService: LLMService, ObservableObject {
                         ))
                     }
                 }
-                modelState = .loading
-                try? await Task.sleep(nanoseconds: 200_000_000)
+                container = c
+                containerReady = true
                 modelState = .ready
-                return
             } catch {
                 modelState = .error(error.localizedDescription)
-                return
             }
         }
+    }
 
-        // 캐시에서 로드 (네트워크 없음, 수 초 소요)
-        do {
-            container = try await VLMModelFactory.shared.loadContainer(
-                configuration: VLMRegistry.qwen3VL4BInstruct4Bit
-            )
-            modelState = .ready
-        } catch {
-            modelState = .error(error.localizedDescription)
+    /// container가 준비될 때까지 대기 (이미 준비돼 있으면 즉시 반환).
+    private func awaitContainer() async throws -> ModelContainer {
+        if let c = container { return c }
+        return try await withCheckedThrowingContinuation { continuation in
+            pendingContinuations.append(continuation)
         }
     }
 
@@ -124,8 +139,12 @@ final class MLXLLMService: LLMService, ObservableObject {
     nonisolated func generate(messages: [ChatMessage]) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
             Task {
-                guard let container = await self.container else {
-                    continuation.finish(throwing: LLMError.modelNotLoaded)
+                // 캐시된 경우 백그라운드 로딩 완료까지 대기 (사용자는 즉시 메시지 전송 가능)
+                let container: ModelContainer
+                do {
+                    container = try await self.awaitContainer()
+                } catch {
+                    continuation.finish(throwing: error)
                     return
                 }
 
